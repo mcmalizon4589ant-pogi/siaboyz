@@ -23,6 +23,75 @@ if ($role !== 'Staff' && $role !== 'Owner') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Staff Dashboard - W.I.Y Laundry</title>
     <link rel="stylesheet" href="ownercss.css">
+    <style>
+        .dashboard-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .card h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.4em;
+        }
+        .card p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .feature-link {
+            display: block;
+            padding: 12px 20px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            text-align: center;
+            transition: background 0.3s;
+        }
+        .feature-link:hover {
+            background: #0056b3;
+        }
+        .welcome-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .welcome-section h1 {
+            font-size: 1.8em;
+            color: #333;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+        .welcome-section h2 {
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        .welcome-section p {
+            color: #666;
+        }
+        .role-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            background: #e9ecef;
+            color: #495057;
+            border-radius: 15px;
+            font-size: 0.9em;
+        }
+    </style>
 </head>
 <body>
 <div class="dashboard-container">
@@ -46,32 +115,58 @@ if ($role !== 'Staff' && $role !== 'Owner') {
     </aside>
 
     <main class="main-content">
-        <header>
+        <div class="welcome-section">
             <h1>A Web-Based Payroll Management System with Fingerprint Biometrics Scanner for W.I.Y Laundry Shop.</h1>
             <h2>Welcome, <?= htmlspecialchars($username); ?>!</h2>
-            <p>Role: <?= htmlspecialchars($role); ?></p>
-        </header>
+            <p><span class="role-badge"><?= htmlspecialchars($role); ?></span></p>
+        </div>
 
         <section class="dashboard-section">
             <div class="card">
                 <h3>Attendance</h3>
-                <p>View and record your daily attendance.</p>
-            <!--   <a href="attendance.php" class="btn">Go to Attendance</a> -->
+                <p>View and record your daily attendance using the fingerprint biometrics scanner. Keep track of your time records and maintain accurate attendance history.</p>
+                <a href="attendance.php" class="feature-link">Go to Attendance</a>
             </div>
 
             <div class="card">
                 <h3>Payroll</h3>
-                <p>Check your salary details and payroll history.</p>
-            <!--   <a href="payroll.php" class="btn">View Payroll</a> -->
+                <p>Check your salary details and payroll history. View your complete earnings, work hours, and payment records in an organized format.</p>
+                <a href="payroll.php" class="feature-link">View Payroll</a>
             </div>
 
             <?php if ($role === 'Owner'): ?>
             <div class="card">
                 <h3>Staff Management</h3>
-                <p>View and manage staff members and roles.</p>
-            <!--   <a href="staff_list.php" class="btn">Manage Staff</a> -->
+                <p>View and manage staff members and roles. Add new employees, update information, and maintain staff records efficiently.</p>
+                <a href="staff_list.php" class="feature-link">Manage Staff</a>
             </div>
             <?php endif; ?>
+        </section>
+        
+        <?php
+        // Get today's attendance status
+        $today = date('Y-m-d');
+        $attendance_query = $conn->query("SELECT time_in, time_out 
+                                        FROM attendance 
+                                        WHERE user_id = '$user_id' 
+                                        AND DATE(time_in) = '$today'");
+        $today_attendance = $attendance_query->fetch_assoc();
+        ?>
+        
+        <section class="dashboard-section">
+            <div class="card">
+                <h3>Today's Status</h3>
+                <?php if ($today_attendance): ?>
+                    <p>Time In: <?= date('h:i A', strtotime($today_attendance['time_in'])) ?></p>
+                    <?php if ($today_attendance['time_out']): ?>
+                        <p>Time Out: <?= date('h:i A', strtotime($today_attendance['time_out'])) ?></p>
+                    <?php else: ?>
+                        <p>Time Out: Not yet recorded</p>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <p>No attendance recorded for today</p>
+                <?php endif; ?>
+            </div>
         </section>
     </main>
 </div>
