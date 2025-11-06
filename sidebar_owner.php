@@ -37,15 +37,15 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                        Payroll
                     </a>
                 </li>
-                <li style="margin-bottom: 15px;">
+                <li style="margin-bottom: 85px; position: relative;">
                     <a href="#" onclick="toggleSettingsSubmenu(event)"
                        class="<?= in_array($currentPage, ['settings.php', 'archived_staff.php']) ? 'active' : '' ?>"
-                       style="display: block; padding: 10px 15px; border-radius: 8px; text-decoration: none; color: #333; background-color: <?= in_array($currentPage, ['settings.php', 'archived_staff.php']) ? '#e0ecff' : 'transparent' ?>; position: relative; transition: background-color 0.3s;">
+                       style="display: block; padding: 10px 15px; border-radius: 8px; text-decoration: none; color: #333; background-color: <?= in_array($currentPage, ['settings.php', 'archived_staff.php']) ? '#e0ecff' : 'transparent' ?>; transition: background-color 0.3s;">
                        Settings
                        <span id="settingsArrow" style="float: right; transition: transform 0.3s;">▼</span>
                     </a>
-                    <ul id="settingsSubmenu" style="list-style: none; padding-left: 20px; margin: 5px 0 0 0; display: <?= in_array($currentPage, ['settings.php', 'archived_staff.php']) ? 'block' : 'none' ?>;">
-                        <li style="margin-bottom: 10px;">
+                    <ul id="settingsSubmenu" style="list-style: none; padding: 0; margin: 0; position: absolute; top: 45px; left: 0; width: 100%; opacity: <?= in_array($currentPage, ['settings.php', 'archived_staff.php']) ? '1' : '0' ?>; visibility: <?= in_array($currentPage, ['settings.php', 'archived_staff.php']) ? 'visible' : 'hidden' ?>; transition: opacity 0.3s ease, visibility 0.3s ease;">
+                        <li style="margin-bottom: 8px; padding-left: 20px;">
                             <a href="settings.php"
                                style="display: block; padding: 8px 15px; border-radius: 6px; text-decoration: none; color: #666; font-size: 14px; background-color: <?= $currentPage == 'settings.php' ? '#d0e0ff' : 'transparent' ?>; transition: background-color 0.3s;"
                                onmouseover="if('<?= $currentPage ?>' !== 'settings.php') this.style.backgroundColor='#f0f0f0';"
@@ -53,7 +53,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                                Profile
                             </a>
                         </li>
-                        <li style="margin-bottom: 10px;">
+                        <li style="margin-bottom: 8px; padding-left: 20px;">
                             <a href="archived_staff.php"
                                style="display: block; padding: 8px 15px; border-radius: 6px; text-decoration: none; color: #666; font-size: 14px; background-color: <?= $currentPage == 'archived_staff.php' ? '#d0e0ff' : 'transparent' ?>; transition: background-color 0.3s;"
                                onmouseover="if('<?= $currentPage ?>' !== 'archived_staff.php') this.style.backgroundColor='#f0f0f0';"
@@ -76,11 +76,13 @@ function toggleSettingsSubmenu(e) {
     const submenu = document.getElementById('settingsSubmenu');
     const arrow = document.getElementById('settingsArrow');
     
-    if (submenu.style.display === 'none' || submenu.style.display === '') {
-        submenu.style.display = 'block';
+    if (submenu.style.opacity === '0' || submenu.style.opacity === '') {
+        submenu.style.opacity = '1';
+        submenu.style.visibility = 'visible';
         arrow.style.transform = 'rotate(180deg)';
     } else {
-        submenu.style.display = 'none';
+        submenu.style.opacity = '0';
+        submenu.style.visibility = 'hidden';
         arrow.style.transform = 'rotate(0deg)';
     }
 }
@@ -90,7 +92,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const submenu = document.getElementById('settingsSubmenu');
     const arrow = document.getElementById('settingsArrow');
     if (submenu && arrow) {
-        if (submenu.style.display === 'block') {
+        const currentOpacity = window.getComputedStyle(submenu).opacity;
+        if (currentOpacity === '1') {
             arrow.style.transform = 'rotate(180deg)';
         }
     }
