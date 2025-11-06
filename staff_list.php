@@ -22,15 +22,64 @@ if (isset($_POST['update_role'])) {
     exit();
 }
 
-// Handle delete staff request
+// Handle delete/archive staff request
 if (isset($_POST['delete_staff'])) {
     $user_id = intval($_POST['user_id']);
+    $termination_reason = isset($_POST['termination_reason']) ? trim($_POST['termination_reason']) : 'Not specified';
     
     // Prevent deleting your own account
     if ($user_id !== $current_user_id) {
-        $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
-        $stmt->bind_param("i", $user_id);
-        $stmt->execute();
+        // Get user data before archiving
+        $user_data = $conn->query("SELECT * FROM users WHERE id = $user_id")->fetch_assoc();
+        
+        if ($user_data) {
+            // Calculate total days worked
+            $total_days = 0;
+            if ($user_data['date_hired']) {
+                $hired = strtotime($user_data['date_hired']);
+                $now = time();
+                $total_days = floor(($now - $hired) / (60 * 60 * 24));
+            }
+            
+            // Calculate final salary (get from attendance records)
+            $salary_query = $conn->query("SELECT SUM(TIMESTAMPDIFF(HOUR, time_in, time_out)) as total_hours 
+                                         FROM attendance WHERE user_id = $user_id");
+            $salary_data = $salary_query->fetch_assoc();
+            $total_hours = $salary_data['total_hours'] ?? 0;
+            $final_salary = $total_hours * 85; // Rate per hour
+            
+            // Archive the employee data
+            $archive_stmt = $conn->prepare("INSERT INTO archived_employees 
+                (original_user_id, name, email, contact_number, address, position, role, 
+                 date_hired, date_terminated, termination_reason, terminated_by, 
+                 total_days_worked, final_salary) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURDATE(), ?, ?, ?, ?)");
+            
+            $archive_stmt->bind_param("issssssssiid", 
+                $user_id,
+                $user_data['name'],
+                $user_data['email'],
+                $user_data['contact_number'],
+                $user_data['address'],
+                $user_data['position'],
+                $user_data['role'],
+                $user_data['date_hired'],
+                $termination_reason,
+                $current_user_id,
+                $total_days,
+                $final_salary
+            );
+            
+            if ($archive_stmt->execute()) {
+                // Delete attendance records (or keep them, your choice)
+                // $conn->query("DELETE FROM attendance WHERE user_id = $user_id");
+                
+                // Delete user from active users
+                $delete_stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
+                $delete_stmt->bind_param("i", $user_id);
+                $delete_stmt->execute();
+            }
+        }
     }
 
     header("Location: staff_list.php");
@@ -132,7 +181,77 @@ $users = $conn->query("SELECT * FROM users WHERE id != $current_user_id");
         .action-cell {
             white-space: nowrap;
         }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 500px;
+            max-width: 90%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .modal-header {
+            margin-bottom: 20px;
+        }
+        .modal-header h2 {
+            margin: 0;
+            color: #dc3545;
+        }
+        .modal-body textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            min-height: 100px;
+            font-family: inherit;
+            resize: vertical;
+        }
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .btn-modal-cancel {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-modal-cancel:hover {
+            background: #5a6268;
+        }
     </style>
+    <script>
+        function showDeleteModal(userId, userName) {
+            document.getElementById('deleteModal').style.display = 'block';
+            document.getElementById('modalUserId').value = userId;
+            document.getElementById('staffNameDisplay').textContent = userName;
+        }
+        
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+            document.getElementById('termination_reason').value = ''; // Clear textarea
+        }
+        
+        // Close modal if click outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('deleteModal');
+            if (event.target == modal) {
+                closeDeleteModal();
+            }
+        }
+    </script>
 </head>
 <body>
 <div class="dashboard-container">
@@ -198,10 +317,7 @@ $users = $conn->query("SELECT * FROM users WHERE id != $current_user_id");
                         <td><?= isset($user['date_hired']) && $user['date_hired'] ? date('M d, Y', strtotime($user['date_hired'])) : '<em style="color:#999;">Not hired yet</em>'; ?></td>
                         <td class="action-cell">
                             <a href="edit_staff.php?id=<?= $user['id']; ?>" class="btn btn-edit">Edit</a>
-                            <form method="POST" onsubmit="return confirm('Are you sure you want to delete this staff member? This action cannot be undone!');" style="display:inline;">
-                                <input type="hidden" name="user_id" value="<?= $user['id']; ?>">
-                                <button type="submit" name="delete_staff" class="btn btn-delete">Delete</button>
-                            </form>
+                            <button type="button" onclick="showDeleteModal(<?= $user['id']; ?>, '<?= htmlspecialchars(addslashes($user['name'])); ?>')" class="btn btn-delete">Delete</button>
                         </td>
                     </tr>
                     <?php endwhile; ?>
@@ -210,5 +326,42 @@ $users = $conn->query("SELECT * FROM users WHERE id != $current_user_id");
         </section>
     </main>
 </div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <h2>Confirm Staff Termination</h2>
+        <p>Are you sure you want to terminate <strong id="staffNameDisplay"></strong>?</p>
+        <p style="color:#666; font-size:14px; margin-top:10px;">This will archive the employee's records and remove their access to the system.</p>
+        
+        <form method="POST" id="deleteForm">
+            <input type="hidden" name="user_id" id="modalUserId">
+            
+            <div style="margin:20px 0;">
+                <label for="termination_reason" style="display:block; margin-bottom:8px; font-weight:600; color:#333;">
+                    Reason for Termination: <span style="color:#e74c3c;">*</span>
+                </label>
+                <textarea 
+                    name="termination_reason" 
+                    id="termination_reason" 
+                    rows="4" 
+                    required
+                    placeholder="Enter the reason for termination (e.g., resignation, terminated, end of contract, etc.)"
+                    style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; font-family:inherit; font-size:14px; resize:vertical;"
+                ></textarea>
+            </div>
+            
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button type="button" onclick="closeDeleteModal()" class="btn" style="background:#6c757d; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">
+                    Cancel
+                </button>
+                <button type="submit" name="delete_staff" class="btn" style="background:#e74c3c; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:600;">
+                    Confirm Termination
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 </body>
 </html>
