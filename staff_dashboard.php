@@ -103,11 +103,13 @@ if ($role !== 'Staff' && $role !== 'Owner') {
                     <li><a href="owner_dashboard.php">Dashboard</a></li>
                     <li><a href="staff_list.php">Staff List</a></li>
                     <li><a href="attendance.php">Attendance</a></li>
-                    <li><a href="payroll.php">Payroll</a></li>
+                    <li><a href="payroll_v2.php">Payroll</a></li>
+                    <li><a href="settings.php">Settings</a></li>
                 <?php else: ?>
                     <li><a href="staff_dashboard.php" class="active">Dashboard</a></li>
                     <li><a href="attendance.php">Attendance</a></li>
                     <li><a href="payroll.php">Payroll</a></li>
+                    <li><a href="settings.php">Settings</a></li>
                 <?php endif; ?>
             </ul>
         </nav>

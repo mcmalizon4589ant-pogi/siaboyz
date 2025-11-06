@@ -30,10 +30,17 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 </a>
             </li>
             <li style="margin-bottom: 15px;">
-                <a href="payroll.php"
-                   class="<?= $currentPage == 'payroll.php' ? 'active' : '' ?>"
-                   style="display: block; padding: 10px 15px; border-radius: 8px; text-decoration: none; color: #333; background-color: <?= $currentPage == 'payroll.php' ? '#e0ecff' : 'transparent' ?>;">
+                <a href="payroll_v2.php"
+                   class="<?= $currentPage == 'payroll_v2.php' ? 'active' : '' ?>"
+                   style="display: block; padding: 10px 15px; border-radius: 8px; text-decoration: none; color: #333; background-color: <?= $currentPage == 'payroll_v2.php' ? '#e0ecff' : 'transparent' ?>;">
                    Payroll
+                </a>
+            </li>
+            <li style="margin-bottom: 15px;">
+                <a href="settings.php"
+                   class="<?= $currentPage == 'settings.php' ? 'active' : '' ?>"
+                   style="display: block; padding: 10px 15px; border-radius: 8px; text-decoration: none; color: #333; background-color: <?= $currentPage == 'settings.php' ? '#e0ecff' : 'transparent' ?>;">
+                   Settings
                 </a>
             </li>
         </ul>

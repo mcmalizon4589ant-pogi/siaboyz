@@ -229,11 +229,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <ul>
                 <?php if ($role === 'Owner'): ?>
                     <li><a href="owner_dashboard.php">Dashboard</a></li>
+                    <li><a href="staff_list.php">Staff List</a></li>
+                    <li><a href="attendance.php" class="active">Attendance</a></li>
+                    <li><a href="payroll_v2.php">Payroll</a></li>
+                    <li><a href="settings.php">Settings</a></li>
                 <?php else: ?>
                     <li><a href="staff_dashboard.php">Dashboard</a></li>
+                    <li><a href="attendance.php" class="active">Attendance</a></li>
+                    <li><a href="payroll.php">Payroll</a></li>
+                    <li><a href="settings.php">Settings</a></li>
                 <?php endif; ?>
-                <li><a href="attendance.php" class="active">Attendance</a></li>
-                <li><a href="payroll.php">Payroll</a></li>
             </ul>
         </nav>
         <a href="logout.php" class="logout">Log Out</a>
@@ -247,10 +252,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $today_record = $conn->query("SELECT time_in, time_out FROM attendance WHERE user_id='$user_id' AND date='$today'")->fetch_assoc();
         ?>
         
-        <header>
-            <h1>Attendance Portal</h1>
-            <p>Welcome, <strong><?= htmlspecialchars($name); ?></strong></p>
-            <?php if (!empty($message)) echo "<p class='alert'>$message</p>"; ?>
+        <header style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1>Attendance Portal</h1>
+                <p>Welcome, <strong><?= htmlspecialchars($name); ?></strong></p>
+                <?php if (!empty($message)) echo "<p class='alert'>$message</p>"; ?>
+            </div>
+            <a href="attendance_report.php" style="background: #3b82f6; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+                View Report
+            </a>
+        </header>
+        
+        <div style="margin-bottom: 20px;">
             
             <div class="clock-container">
                 <div class="date" id="current-date"></div>
@@ -289,6 +302,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         ?>
 
+        <?php if ($role !== 'Owner'): ?>
+        <!-- Only show for Staff, not for Owner -->
         <div class="status-card">
             <h2>Today's Status</h2>
             <div class="status-info">
@@ -315,11 +330,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <?php if ($hours_worked >= 8): ?>
                 <div class="warning-message show">
-                    ⚠️ Warning: You have exceeded the maximum working hours for today!
+                    Warning: You have exceeded the maximum working hours for today!
                 </div>
             <?php elseif ($hours_worked > 7.5): ?>
                 <div class="warning-message show">
-                    ⚠️ Notice: You are approaching the maximum working hours!
+                    Notice: You are approaching the maximum working hours!
                 </div>
             <?php endif; ?>
         </div>
@@ -332,6 +347,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Time Out
             </button>
         </form>
+        <?php endif; ?>
 
         <hr>
         <h3>Attendance Records</h3>

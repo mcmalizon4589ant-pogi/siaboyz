@@ -25,7 +25,8 @@ $name = $_SESSION['name'];
                 <li><a href="owner_dashboard.php" class="active">Dashboard</a></li>
                 <li><a href="staff_list.php">Staff List</a></li>
                 <li><a href="attendance.php">Attendance</a></li>
-                <li><a href="payroll.php">Payroll</a></li>
+                <li><a href="payroll_v2.php">Payroll</a></li>
+                <li><a href="settings.php">Settings</a></li>
             </ul>
         </nav>
         <a href="logout.php" class="logout">Log Out</a>

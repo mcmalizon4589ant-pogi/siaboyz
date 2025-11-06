@@ -26,29 +26,72 @@ function calc_hours($in, $out) {
     <link rel="stylesheet" href="ownercss.css">
     <style>
         .payroll-table {
+            width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
-        }
-        .payroll-table th, .payroll-table td {
-            padding: 10px;
-            text-align: left;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .payroll-table th {
-            background-color: #f5f5f5;
+            background-color: #fafafa;
+            color: #333;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        .payroll-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .payroll-table tr:hover {
+            background-color: #f8f9fa;
         }
         .total-row {
-            background-color: #f8f9fa;
+            background-color: #e9ecef !important;
             font-weight: bold;
+            font-size: 1.1em;
         }
         .summary-box {
-            background-color: #f8f9fa;
-            padding: 20px;
-            border-radius: 5px;
+            background: #fff;
+            color: #333;
+            padding: 25px;
+            border-radius: 10px;
             margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: 1px solid #e5e5e5;
         }
         .summary-box h3 {
             margin-top: 0;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .summary-item:last-child {
+            border-bottom: none;
+            font-size: 1.3em;
+            padding-top: 15px;
+            margin-top: 10px;
+            border-top: 2px solid #333;
+            font-weight: 700;
+        }
+        .btn-print {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+        .btn-print:hover {
+            background: #2563eb;
         }
         select {
             padding: 8px;
@@ -60,15 +103,29 @@ function calc_hours($in, $out) {
         }
         .no-records {
             text-align: center;
-            padding: 40px;
+            padding: 50px;
             background-color: #f8f9fa;
-            border-radius: 5px;
+            border-radius: 10px;
             margin: 20px 0;
         }
         .no-records p {
             color: #6c757d;
-            font-size: 1.1em;
-            margin: 0;
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+        @media print {
+            .sidebar, .btn-print {
+                display: none;
+            }
+            .summary-box {
+                background: #fff !important;
+                color: black !important;
+                border: 2px solid #333;
+            }
+            .payroll-table th {
+                background: #fafafa !important;
+                color: #333 !important;
+            }
         }
     </style>
 </head>
@@ -80,11 +137,16 @@ function calc_hours($in, $out) {
             <ul>
                 <?php if ($role === 'Owner'): ?>
                     <li><a href="owner_dashboard.php">Dashboard</a></li>
+                    <li><a href="staff_list.php">Staff List</a></li>
+                    <li><a href="attendance.php">Attendance</a></li>
+                    <li><a href="payroll_v2.php">Payroll</a></li>
+                    <li><a href="settings.php">Settings</a></li>
                 <?php else: ?>
                     <li><a href="staff_dashboard.php">Dashboard</a></li>
+                    <li><a href="attendance.php">Attendance</a></li>
+                    <li><a href="payroll.php" class="active">Payroll</a></li>
+                    <li><a href="settings.php">Settings</a></li>
                 <?php endif; ?>
-                <li><a href="attendance.php">Attendance</a></li>
-                <li><a href="payroll.php" class="active">Payroll</a></li>
             </ul>
         </nav>
         <a href="logout.php" class="logout">Log Out</a>
@@ -177,10 +239,28 @@ function calc_hours($in, $out) {
                 </table>
                 
                 <div class="summary-box">
-                    <h3>Monthly Summary</h3>
-                    <p>Total Hours Worked: <strong><?= number_format($total_hours, 2) ?> hrs</strong></p>
-                    <p>Hourly Rate: <strong>₱<?= number_format($rate, 2) ?></strong></p>
-                    <p>Total Pay: <strong>₱<?= number_format($total_pay, 2) ?></strong></p>
+                    <h3>Payslip Summary</h3>
+                    <div class="summary-item">
+                        <span>Employee Name:</span>
+                        <span><?= htmlspecialchars($staff_name) ?></span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Pay Period:</span>
+                        <span><?= date('F Y') ?></span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Total Hours:</span>
+                        <span><?= number_format($total_hours, 2) ?> hours</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Hourly Rate:</span>
+                        <span>₱<?= number_format($rate, 2) ?></span>
+                    </div>
+                    <div class="summary-item">
+                        <span>TOTAL PAY:</span>
+                        <span>₱<?= number_format($total_pay, 2) ?></span>
+                    </div>
+                    <button class="btn-print" onclick="window.print()">Print Payslip</button>
                 </div>
                 <?php endif; ?>
             <?php endif; ?>
@@ -243,10 +323,28 @@ function calc_hours($in, $out) {
             </table>
             
             <div class="summary-box">
-                <h3>Monthly Summary</h3>
-                <p>Total Hours Worked: <strong><?= number_format($total_hours, 2) ?> hrs</strong></p>
-                <p>Hourly Rate: <strong>₱<?= number_format($rate, 2) ?></strong></p>
-                <p>Total Pay: <strong>₱<?= number_format($total_pay, 2) ?></strong></p>
+                <h3>Payslip Summary</h3>
+                <div class="summary-item">
+                    <span>Employee Name:</span>
+                    <span><?= htmlspecialchars($name) ?></span>
+                </div>
+                <div class="summary-item">
+                    <span>Pay Period:</span>
+                    <span><?= date('F Y') ?></span>
+                </div>
+                <div class="summary-item">
+                    <span>Total Hours:</span>
+                    <span><?= number_format($total_hours, 2) ?> hours</span>
+                </div>
+                <div class="summary-item">
+                    <span>Hourly Rate:</span>
+                    <span>₱<?= number_format($rate, 2) ?></span>
+                </div>
+                <div class="summary-item">
+                    <span>TOTAL PAY:</span>
+                    <span>₱<?= number_format($total_pay, 2) ?></span>
+                </div>
+                <button class="btn-print" onclick="window.print()">Print Payslip</button>
             </div>
             <?php endif; ?>
         <?php endif; ?>
