@@ -179,26 +179,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </head>
 <body>
 <div class="dashboard-container">
-    <aside class="sidebar">
-        <h2>W.I.Y Laundry</h2>
-        <nav>
-            <ul>
-                <?php if ($role === 'Owner'): ?>
-                    <li><a href="owner_dashboard.php">Dashboard</a></li>
-                    <li><a href="staff_list.php">Staff List</a></li>
-                    <li><a href="attendance.php">Attendance</a></li>
-                    <li><a href="payroll_v2.php">Payroll</a></li>
-                    <li><a href="settings.php" class="active">Settings</a></li>
-                <?php else: ?>
+    <?php 
+    if ($role === 'Owner') {
+        include 'sidebar_owner.php';
+    } else {
+        // Staff sidebar
+        ?>
+        <aside class="sidebar">
+            <h2>W.I.Y Laundry</h2>
+            <nav>
+                <ul>
                     <li><a href="staff_dashboard.php">Dashboard</a></li>
                     <li><a href="attendance.php">Attendance</a></li>
                     <li><a href="payroll.php">Payroll</a></li>
                     <li><a href="settings.php" class="active">Settings</a></li>
-                <?php endif; ?>
-            </ul>
-        </nav>
-        <a href="logout.php" class="logout">Log Out</a>
-    </aside>
+                </ul>
+            </nav>
+            <a href="logout.php" class="logout">Log Out</a>
+        </aside>
+        <?php
+    }
+    ?>
 
     <main class="main-content">
         <div class="settings-container">
