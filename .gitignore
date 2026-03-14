@@ -1,5 +1,4 @@
-config.php
-*.log
-.DS_Store
-/vendor/
-*.env
+texts
+img
+database
+

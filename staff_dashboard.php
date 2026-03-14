@@ -91,6 +91,30 @@ if ($role !== 'Staff' && $role !== 'Owner') {
             border-radius: 15px;
             font-size: 0.9em;
         }
+        .biometric-status {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .biometric-status .status-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .biometric-status .status-item {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 10px 12px;
+            min-width: 160px;
+        }
+        .biometric-welcome {
+            font-weight: 600;
+            color: #28a745;
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
@@ -169,8 +193,92 @@ if ($role !== 'Staff' && $role !== 'Owner') {
                     <p>No attendance recorded for today</p>
                 <?php endif; ?>
             </div>
+            <div class="biometric-status">
+                <h3>Biometric Status</h3>
+                <div id="biometric-welcome" class="biometric-welcome"></div>
+                <div class="status-row">
+                    <div class="status-item">
+                        <div>Last Action</div>
+                        <div id="biometric-action">Loading...</div>
+                    </div>
+                    <div class="status-item">
+                        <div>Last Status</div>
+                        <div id="biometric-status">Loading...</div>
+                    </div>
+                    <div class="status-item">
+                        <div>Last Scan</div>
+                        <div id="biometric-time">Loading...</div>
+                    </div>
+                </div>
+                <div class="status-row">
+                    <div class="status-item">
+                        <div>Time In</div>
+                        <div id="biometric-timein">Loading...</div>
+                    </div>
+                    <div class="status-item">
+                        <div>Time Out</div>
+                        <div id="biometric-timeout">Loading...</div>
+                    </div>
+                </div>
+            </div>
         </section>
     </main>
 </div>
+<script>
+    const biometricWelcome = document.getElementById('biometric-welcome');
+    const biometricAction = document.getElementById('biometric-action');
+    const biometricStatus = document.getElementById('biometric-status');
+    const biometricTime = document.getElementById('biometric-time');
+    const biometricTimeIn = document.getElementById('biometric-timein');
+    const biometricTimeOut = document.getElementById('biometric-timeout');
+
+    function formatTimestamp(value) {
+        if (!value) {
+            return 'No data';
+        }
+        const parsed = new Date(value.replace(' ', 'T'));
+        if (Number.isNaN(parsed.getTime())) {
+            return value;
+        }
+        return parsed.toLocaleString();
+    }
+
+    async function loadBiometricStatus() {
+        try {
+            const response = await fetch('api/biometric_my_status.php', { credentials: 'same-origin' });
+            const data = await response.json();
+
+            if (!data.success) {
+                biometricAction.textContent = 'Unavailable';
+                biometricStatus.textContent = 'Unavailable';
+                biometricTime.textContent = 'Unavailable';
+                biometricTimeIn.textContent = 'Unavailable';
+                biometricTimeOut.textContent = 'Unavailable';
+                biometricWelcome.textContent = '';
+                return;
+            }
+
+            const lastScan = data.last_scan || {};
+            const attendance = data.attendance_today || {};
+
+            biometricAction.textContent = (lastScan.action || 'None').replace('_', ' ');
+            biometricStatus.textContent = lastScan.status || 'None';
+            biometricTime.textContent = formatTimestamp(lastScan.timestamp);
+            biometricTimeIn.textContent = attendance.time_in ? attendance.time_in : 'Not yet recorded';
+            biometricTimeOut.textContent = attendance.time_out ? attendance.time_out : 'Not yet recorded';
+            biometricWelcome.textContent = data.welcome_message || '';
+        } catch (error) {
+            biometricAction.textContent = 'Unavailable';
+            biometricStatus.textContent = 'Unavailable';
+            biometricTime.textContent = 'Unavailable';
+            biometricTimeIn.textContent = 'Unavailable';
+            biometricTimeOut.textContent = 'Unavailable';
+            biometricWelcome.textContent = '';
+        }
+    }
+
+    loadBiometricStatus();
+    setInterval(loadBiometricStatus, 5000);
+</script>
 </body>
 </html>

@@ -319,7 +319,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
 
-        <div class="progress-container <?= $progress_class ?>">
+        <!-- Biometric Status Section -->
+        <?php
+        $biometric_query = $conn->prepare("SELECT biometric_enabled, biometric_status, last_biometric_checkin FROM users WHERE id = ?");
+        $biometric_query->bind_param("i", $user_id);
+        $biometric_query->execute();
+        $biometric_data = $biometric_query->get_result()->fetch_assoc();
+        $is_biometric_enrolled = $biometric_data['biometric_enabled'] ?? false;
+        $last_biometric = $biometric_data['last_biometric_checkin'] ?? null;
+        ?>
+        
+        <div class="status-card" style="border-left: 4px solid #6366f1;">
+            <h2>🔐 Biometric Scanner Status</h2>
+            <div class="status-info">
+                <div class="status-item">
+                    <strong>Enrollment Status:</strong> 
+                    <?php if ($is_biometric_enrolled): ?>
+                        <span style="color: #28a745; font-weight: bold;">✓ Enrolled</span>
+                    <?php else: ?>
+                        <span style="color: #dc3545; font-weight: bold;">✗ Not Enrolled</span>
+                    <?php endif; ?>
+                </div>
+                <div class="status-item">
+                    <strong>Last Biometric Check-in:</strong> 
+                    <?php if ($last_biometric): ?>
+                        <?= date('M d, Y h:i A', strtotime($last_biometric)) ?>
+                    <?php else: ?>
+                        No biometric check-ins yet
+                    <?php endif; ?>
+                </div>
+                <div class="status-item">
+                    <strong>Method:</strong> 
+                    <?php if ($is_biometric_enrolled): ?>
+                        Fingerprint Scanner Available
+                    <?php else: ?>
+                        Please enroll in Settings or contact your manager
+                    <?php endif; ?>
+                </div>
+            </div>
+            <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                <strong>ℹ️ Info:</strong> Your fingerprint has been registered with the biometric system. 
+                You can now use the fingerprint scanner for automatic time-in/out recording.
+                <?php if (!$is_biometric_enrolled): ?>
+                <br>Go to <a href="settings.php" style="color: #1d4ed8; text-decoration: underline;">Settings</a> to enroll your fingerprint.
+                <?php endif; ?>
+            </p>
+        </div>
+
+        <div class="progress-container <?= $progress_class ?>">">
             <h3>Hours Worked Today</h3>
             <div class="progress-bar-container">
                 <div class="progress-bar" style="width: <?= $progress ?>%"></div>

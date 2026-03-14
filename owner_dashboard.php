@@ -15,6 +15,29 @@ $name = $_SESSION['name'];
     <meta charset="UTF-8">
     <title>Owner Dashboard</title>
     <link rel="stylesheet" href="ownercss.css">
+    <style>
+        .biometric-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .biometric-item {
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            padding: 12px;
+        }
+        .biometric-meta {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .biometric-status.ok {
+            color: #28a745;
+        }
+        .biometric-status.fail {
+            color: #dc3545;
+        }
+    </style>
 </head>
 <body>
 <div class="dashboard-container">
@@ -55,7 +78,58 @@ $name = $_SESSION['name'];
                 </div>
             </div>
         </section>
+
+        <section class="content">
+            <div class="card-grid">
+                <div>
+                    <h3>Recent Biometric Scans</h3>
+                    <div id="biometric-feed" class="biometric-feed">Loading...</div>
+                </div>
+            </div>
+        </section>
     </main>
 </div>
+<script>
+    const biometricFeed = document.getElementById('biometric-feed');
+
+    function renderBiometricFeed(items) {
+        if (!items.length) {
+            biometricFeed.textContent = 'No recent scans yet.';
+            return;
+        }
+
+        biometricFeed.innerHTML = items.map((item) => {
+            const timeText = item.timestamp ? new Date(item.timestamp.replace(' ', 'T')).toLocaleString() : 'Unknown time';
+            const statusClass = item.status === 'success' ? 'ok' : 'fail';
+            const actionText = item.action ? item.action.replace('_', ' ') : 'scan';
+            return `
+                <div class="biometric-item">
+                    <div><strong>${item.name}</strong> - ${actionText}</div>
+                    <div class="biometric-meta">
+                        <span class="biometric-status ${statusClass}">${item.status}</span>
+                        <span> | ${timeText}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function loadRecentScans() {
+        try {
+            const response = await fetch('api/biometric_recent.php?limit=8', { credentials: 'same-origin' });
+            const data = await response.json();
+            if (!data.success) {
+                biometricFeed.textContent = 'Unable to load recent scans.';
+                return;
+            }
+            renderBiometricFeed(data.data || []);
+        } catch (error) {
+            biometricFeed.textContent = 'Unable to load recent scans.';
+        }
+    }
+
+    loadRecentScans();
+    setInterval(loadRecentScans, 5000);
+</script>
 </body>
 </html>

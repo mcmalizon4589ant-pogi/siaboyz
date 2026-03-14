@@ -239,16 +239,30 @@ $users = $conn->query("SELECT * FROM users WHERE id != $current_user_id");
             document.getElementById('staffNameDisplay').textContent = userName;
         }
         
+        function showEnrollModal(userId, userName) {
+            document.getElementById('enrollModal').style.display = 'block';
+            document.getElementById('enrollStaffId').value = userId;
+            document.getElementById('enrollStaffName').textContent = userName;
+        }
+        
         function closeDeleteModal() {
             document.getElementById('deleteModal').style.display = 'none';
             document.getElementById('termination_reason').value = ''; // Clear textarea
         }
         
+        function closeEnrollModal() {
+            document.getElementById('enrollModal').style.display = 'none';
+        }
+        
         // Close modal if click outside
         window.onclick = function(event) {
-            const modal = document.getElementById('deleteModal');
-            if (event.target == modal) {
+            const deleteModal = document.getElementById('deleteModal');
+            const enrollModal = document.getElementById('enrollModal');
+            if (event.target == deleteModal) {
                 closeDeleteModal();
+            }
+            if (event.target == enrollModal) {
+                closeEnrollModal();
             }
         }
     </script>
@@ -285,6 +299,7 @@ $users = $conn->query("SELECT * FROM users WHERE id != $current_user_id");
                         <th>Contact</th>
                         <th>Role</th>
                         <th>Date Hired</th>
+                        <th>Biometric</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -300,6 +315,13 @@ $users = $conn->query("SELECT * FROM users WHERE id != $current_user_id");
                         $position_value = isset($user['position']) ? strtolower($user['position']) : '';
                         if ($position_value == 'trainee') $position_class .= ' position-trainee';
                         elseif (in_array($position_value, ['supervisor', 'admin', 'manager'])) $position_class .= ' position-' . $position_value;
+                        
+                        // Check biometric enrollment status
+                        $biometric_check = $conn->prepare("SELECT is_enrolled FROM fingerprints WHERE user_id = ?");
+                        $biometric_check->bind_param("i", $user['id']);
+                        $biometric_check->execute();
+                        $biometric_result = $biometric_check->get_result();
+                        $is_enrolled = $biometric_result->num_rows > 0 && $biometric_result->fetch_assoc()['is_enrolled'];
                     ?>
                     <tr>
                         <td>#<?= $user['id']; ?></td>
@@ -315,8 +337,16 @@ $users = $conn->query("SELECT * FROM users WHERE id != $current_user_id");
                         <td><?= isset($user['contact_number']) && $user['contact_number'] ? htmlspecialchars($user['contact_number']) : '<em style="color:#999;">N/A</em>'; ?></td>
                         <td><span class="role-badge <?= $role_class ?>"><?= htmlspecialchars($user['role']); ?></span></td>
                         <td><?= isset($user['date_hired']) && $user['date_hired'] ? date('M d, Y', strtotime($user['date_hired'])) : '<em style="color:#999;">Not hired yet</em>'; ?></td>
+                        <td>
+                            <?php if ($is_enrolled): ?>
+                                <span style="color: #28a745; font-weight: bold;">✓ Enrolled</span>
+                            <?php else: ?>
+                                <span style="color: #dc3545; font-weight: bold;">✗ Not Enrolled</span>
+                            <?php endif; ?>
+                        </td>
                         <td class="action-cell">
                             <a href="edit_staff.php?id=<?= $user['id']; ?>" class="btn btn-edit">Edit</a>
+                            <button type="button" onclick="showEnrollModal(<?= $user['id']; ?>, '<?= htmlspecialchars(addslashes($user['name'])); ?>')" class="btn btn-enroll" style="background: #6366f1; margin-left:5px;">Biometric</button>
                             <button type="button" onclick="showDeleteModal(<?= $user['id']; ?>, '<?= htmlspecialchars(addslashes($user['name'])); ?>')" class="btn btn-delete">Delete</button>
                         </td>
                     </tr>
@@ -360,6 +390,59 @@ $users = $conn->query("SELECT * FROM users WHERE id != $current_user_id");
                 </button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Biometric Enrollment Modal -->
+<div id="enrollModal" class="modal">
+    <div class="modal-content" style="width: 600px;">
+        <h2>🔐 Biometric Enrollment Instructions</h2>
+        <p>Enroll <strong id="enrollStaffName"></strong> for fingerprint scanning:</p>
+        
+        <div style="background: #f0f4f8; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #6366f1;">
+            <h3 style="margin-top: 0; color: #333;">Steps to Enroll:</h3>
+            <ol style="margin: 10px 0; padding-left: 20px;">
+                <li><strong>Connect Device:</strong> Ensure the R307 fingerprint scanner is powered on and connected to WiFi</li>
+                <li><strong>Get Staff Information:</strong> Note down the Staff ID: <input type="text" id="enrollStaffId" readonly style="width: 80px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; font-weight: bold;"></li>
+                <li><strong>Enroll Fingerprint:</strong> 
+                    <ul>
+                        <li>Open the Arduino Serial Monitor (Tools > Serial Monitor)</li>
+                        <li>Type: <code style="background: #fff; padding: 2px 6px; border: 1px solid #ddd; border-radius: 3px;">enroll [STAFF_ID]</code></li>
+                        <li>Example: <code style="background: #fff; padding: 2px 6px; border: 1px solid #ddd; border-radius: 3px;">enroll 5</code></li>
+                        <li>Follow the prompt: Place finger on sensor twice (remove and place again)</li>
+                    </ul>
+                </li>
+                <li><strong>Confirm:</strong> System will show "✓ Fingerprint enrolled successfully"</li>
+            </ol>
+        </div>
+        
+        <div style="background: #fff3cd; padding: 12px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #ffc107;">
+            <strong>⚠️ Important Notes:</strong>
+            <ul style="margin: 8px 0; padding-left: 20px; font-size: 14px;">
+                <li>Staff can only use fingerprint scanner after successful enrollment</li>
+                <li>Clean fingers improve recognition accuracy</li>
+                <li>Each staff member can have only one enrolled fingerprint</li>
+                <li>Enrollment must be done via Arduino Serial Monitor</li>
+            </ul>
+        </div>
+        
+        <div style="background: #d4edda; padding: 12px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #28a745;">
+            <strong>✓ After Enrollment:</strong>
+            <ul style="margin: 8px 0; padding-left: 20px; font-size: 14px;">
+                <li>Staff member can now use fingerprint scanner for time-in/out</li>
+                <li>Fingerprint status will show as "Enrolled" in this table</li>
+                <li>Manual buttons remain available as backup</li>
+            </ul>
+        </div>
+        
+        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px;">
+            <button type="button" onclick="closeEnrollModal()" class="btn" style="background:#6c757d; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer;">
+                Close
+            </button>
+            <a href="https://github.com/espressif/arduino-esp32" target="_blank" class="btn" style="background:#28a745; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; text-decoration:none; display:inline-block;">
+                Arduino Setup Guide
+            </a>
+        </div>
     </div>
 </div>
 
